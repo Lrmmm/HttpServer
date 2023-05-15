@@ -1,5 +1,7 @@
 #include "http_method.h"
 #include <stdio.h>
+#include <string.h>
+#include "define.h"
 int get_line(int sock, char* buf, int size)
 {
     int count = 0;
@@ -43,14 +45,60 @@ void do_http_request(int client_sock)
 {
     int buf_len = 0;
     char buf[256];
+    char method[64];
+    char url[256];
 
     // 读取客户端发送的http请求
 
     // 1.读取请求行
+    buf_len = get_line(client_sock, buf, sizeof(buf));
+
+    if (buf_len > 0)  // 读取第一行成功
+    {
+        int i = 0;
+        int j = 0;
+        while (!isspace(buf[j]) && (i < sizeof(method) - 1))
+        {
+            method[i] = buf[j];
+            i++;
+            j++;
+        }
+        method[i] = '\0';
+#ifdef DEBUG
+        printf("request method: %s\n", method);
+#endif
+
+        if (strncasecmp(method , "GET", sizeof("GET")) == 0){
+#ifdef DEBUG
+            printf("method = GET\n");
+#endif
+            // 获取url
+            while (isspace(buf[j++]));
+            i = 0;
+            
+            while (!isspace(buf[j]) && (i < sizeof(url) - 1))
+            {
+                url[i] = buf[j];
+                i++;
+                j++;
+            }
+
+            url[i] = '\0';
+
+#ifdef DEBUG
+            printf("url: %s\n", url);
+#endif          
+        }
+    }
+
+    // 2.读取http头部
+    buf_len = 0;
+    memset(buf, 0, sizeof(buf));
+
     do {
         buf_len = get_line(client_sock, buf, sizeof(buf));
-        printf("read line : %s\n", buf);
+#ifdef DEBUG
+        printf("read: %s\n", buf);
+#endif
     }while(buf_len > 0);
-    // buf_len = get_line(client_sock, buf, sizeof(buf));
-    printf("ok");
 }
