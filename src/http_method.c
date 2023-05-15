@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "define.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
 int get_line(int sock, char* buf, int size)
 {
     int count = 0;
@@ -48,6 +52,7 @@ void do_http_request(int client_sock)
     char method[64];
     char url[256];
     char path[256];
+    struct stat file_stat;
 
     // 读取客户端发送的http请求
 
@@ -113,11 +118,18 @@ void do_http_request(int client_sock)
                     printf("real url: %s\n", url);
 #endif
                 }
-                sprintf(path, "../docs%s", url);
+                sprintf(path, "./docs%s", url);
 #ifdef DEBUG
                 printf("path: %s\n",path);
 #endif
-
+                // 4.执行http响应
+                // 判断文件是否存在，如果存在就响应200 , ok ，同时发送相应的html。如果不存在就响应404
+                if(stat(path, &file_stat) == -1){
+                    file_not_found(client_sock);
+                }
+                else {
+                    do_http_response(client_sock);
+                }
             }
         }
         else  // 处理非GET请求,读取http 头部，并响应客户端501  Method Not Implemented
@@ -135,5 +147,36 @@ void do_http_request(int client_sock)
         }
     }
 
+
+}
+
+void do_http_response(int client_sock)
+{
+
+}
+
+void file_not_found(int client_sock)
+{
+    const char* reply = "HTTP/1.0 404 NOT FOUND\r\n\
+Content-Type: text/html\r\n\
+\r\n\
+<HTML>\r\n\
+<HEAD>\r\n\
+<TITLE>NOT FOUND</TITLE>\r\n\
+</HEAD>\r\n\
+<BODY>\r\n\
+    <h1>The server could not fulfill your request because the resource specified is unavailable or nonexistent.</h1>\r\n\
+</BODY>\r\n\
+</HTML>";
+    int len = write(client_sock, reply, strlen(reply));
+#ifdef DEBUG
+    fprintf(stdout, reply);
+#endif
+
+    if (len < 0) {
+#ifdef DEBUG
+    fprintf(stderr, "send reply failed : info : %s", strerror(errno));
+#endif
+    }
 
 }
