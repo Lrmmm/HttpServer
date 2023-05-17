@@ -125,10 +125,17 @@ void do_http_request(int client_sock)
                 // 4.执行http响应
                 // 判断文件是否存在，如果存在就响应200 , ok ，同时发送相应的html。如果不存在就响应404
                 if(stat(path, &file_stat) == -1){
+                    fprintf(stderr, "stat failed path : %s  info: %s", path, strerror(errno));
                     file_not_found(client_sock);
                 }
                 else {
-                    do_http_response(client_sock);
+
+                    // 给目录追加一个index
+                    if(S_ISDIR(file_stat.st_mode))
+                    {
+                        strcat(path, "/index.html");
+                    }
+                    do_http_response(client_sock, path);
                 }
             }
         }
@@ -150,8 +157,22 @@ void do_http_request(int client_sock)
 
 }
 
-void do_http_response(int client_sock)
+void do_http_response(int client_sock, const char * path)
 {
+    FILE* fp = NULL;
+    fp = fopen(path, "r");
+    if (!fp) {
+        file_not_found(client_sock);
+        return ;
+    }
+
+    // 1.发送HTTP头部
+    send_http_header(client_sock, fp);
+
+    // 2.发送HTTP body
+    send_file_body(client_sock, path);
+
+    fclose(fp);
 
 }
 
@@ -179,4 +200,62 @@ Content-Type: text/html\r\n\
 #endif
     }
 
+}
+
+void send_http_header(int client_sock, FILE* fp)
+{
+    struct stat st;
+    int file_id = 0;
+    char buf[1024] = {0};
+
+    strcpy(buf, "HTTP/1.0 200 OK\r\n");
+    strcat(buf, "Server: Lirunmin Server\r\n");
+    strcat(buf, "Content-Type: text/html\r\n");
+    strcat(buf, "Connection: Close\r\n");
+
+    file_id = fileno(fp);
+    if (fstat(file_id, &st) == -1)
+    {
+        fprintf(stderr, "fstat error : %s\n", strerror(errno));
+        iner_error(client_sock);
+    }
+#ifdef DEBUG
+    fprintf(stdout, "\nHead: %s\n", buf);
+#endif
+
+    if(send(client_sock, buf, strlen(buf), 0) < 0)
+    {
+        fprintf(stderr, "Send Failed . Data: %s , ErrorInfo: %s\n", buf, strerror(errno));
+    }
+
+
+}
+void send_file_body(int client_sock, const char* path)
+{
+
+}
+
+void iner_error(int client_sock)
+{
+    const char* reply = "HTTP/1.0 500 Internal Server Error\r\n\
+Content-Type: text/html\r\n\
+\r\n\
+<HTML>\r\n\
+<HEAD>\r\n\
+<TITLE>Inner Error</TITLE>\r\n\
+</HEAD>\r\n\
+<BODY>\r\n\
+    <h1>Server Internal Error</h1>\r\n\
+</BODY>\r\n\
+</HTML>";
+    int len = write(client_sock, reply, strlen(reply));
+#ifdef DEBUG
+    fprintf(stdout, reply);
+#endif
+
+    if (len < 0) {
+#ifdef DEBUG
+    fprintf(stderr, "send reply failed : info : %s", strerror(errno));
+#endif
+    }
 }
