@@ -149,8 +149,7 @@ void do_http_request(int client_sock)
 #ifdef DEBUG
                 printf("read: %s\n", buf);
 #endif
-            }while(buf_len > 0); 
-
+            }while(buf_len > 0);
         }
     }
 
@@ -170,7 +169,7 @@ void do_http_response(int client_sock, const char * path)
     send_http_header(client_sock, fp);
 
     // 2.发送HTTP body
-    send_file_body(client_sock, path);
+    send_file_body(client_sock, fp);
 
     fclose(fp);
 
@@ -206,6 +205,7 @@ void send_http_header(int client_sock, FILE* fp)
 {
     struct stat st;
     int file_id = 0;
+    char tmp[64];
     char buf[1024] = {0};
 
     strcpy(buf, "HTTP/1.0 200 OK\r\n");
@@ -219,6 +219,9 @@ void send_http_header(int client_sock, FILE* fp)
         fprintf(stderr, "fstat error : %s\n", strerror(errno));
         iner_error(client_sock);
     }
+
+    snprintf(tmp, 64, "Conntent-Length: %ld\r\n\r\n",st.st_size);
+    strcat(buf, tmp);
 #ifdef DEBUG
     fprintf(stdout, "\nHead: %s\n", buf);
 #endif
@@ -230,8 +233,27 @@ void send_http_header(int client_sock, FILE* fp)
 
 
 }
-void send_file_body(int client_sock, const char* path)
+void send_file_body(int client_sock, FILE* fp)
 {
+    char buf[1024];
+
+    fgets(buf, sizeof(buf), fp);
+
+    while (!feof(fp))
+    {
+        int len = write(client_sock, buf, strlen(buf));
+
+        if (len < 0)
+        {
+            fprintf(stderr, "Send file failed , info: %s", strerror(errno));
+            break;
+        }
+#ifdef DEBUG
+        fprintf(stdout, "file:%s\n", buf);
+#endif
+        fgets(buf, sizeof(buf), fp);
+    }
+    
 
 }
 
