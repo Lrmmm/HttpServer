@@ -166,11 +166,12 @@ void do_http_response(int client_sock, const char * path)
     }
 
     // 1.发送HTTP头部
-    send_http_header(client_sock, fp);
+    int ret = send_http_header(client_sock, fp);
 
     // 2.发送HTTP body
-    send_file_body(client_sock, fp);
-
+    if (ret) {
+        send_file_body(client_sock, fp);
+    }
     fclose(fp);
 
 }
@@ -201,7 +202,7 @@ Content-Type: text/html\r\n\
 
 }
 
-void send_http_header(int client_sock, FILE* fp)
+int send_http_header(int client_sock, FILE* fp)
 {
     struct stat st;
     int file_id = 0;
@@ -218,6 +219,7 @@ void send_http_header(int client_sock, FILE* fp)
     {
         fprintf(stderr, "fstat error : %s\n", strerror(errno));
         iner_error(client_sock);
+        return 0;
     }
 
     snprintf(tmp, 64, "Conntent-Length: %ld\r\n\r\n",st.st_size);
@@ -229,7 +231,10 @@ void send_http_header(int client_sock, FILE* fp)
     if(send(client_sock, buf, strlen(buf), 0) < 0)
     {
         fprintf(stderr, "Send Failed . Data: %s , ErrorInfo: %s\n", buf, strerror(errno));
+        return 0;
     }
+
+    return 1;
 
 
 }
