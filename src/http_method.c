@@ -150,7 +150,13 @@ void do_http_request(int client_sock)
                 printf("read: %s\n", buf);
 #endif
             }while(buf_len > 0);
+
+            unimpemented(client_sock);
+
         }
+    }
+    else {  // 请求格式有问题
+        bad_request(client_sock);
     }
 
 
@@ -280,9 +286,60 @@ Content-Type: text/html\r\n\
     fprintf(stdout, reply);
 #endif
 
-    if (len < 0) {
+    if (len <= 0) {
 #ifdef DEBUG
     fprintf(stderr, "send reply failed : info : %s", strerror(errno));
 #endif
     }
+}
+
+void unimpemented(int client_sock)
+{
+    const char* reply = "HTTP/1.0 501 Method Not Implemented\r\n\
+Content-Type: text/html\r\n\
+\r\n\
+<HTML>\r\n\
+<HEAD>\r\n\
+<TITLE>Method Not Implemented</TITLE>\r\n\
+</HEAD>\r\n\
+<BODY>\r\n\
+    <h1>Method Not Implemented</h1>\r\n\
+</BODY>\r\n\
+</HTML>";
+    int len = write(client_sock, reply, strlen(reply));
+#ifdef DEBUG
+    fprintf(stdout, reply);
+#endif
+
+    if (len <= 0) {
+#ifdef DEBUG
+    fprintf(stderr, "send reply failed : info : %s", strerror(errno));
+#endif
+    }
+
+}
+
+void bad_request(int client_sock)
+{
+    const char* reply = "HTTP/1.0 400 BAD REQUEST\r\n\
+Content-Type: text/html\r\n\
+\r\n\
+<HTML>\r\n\
+<HEAD>\r\n\
+<TITLE>BAD REQUEST</TITLE>\r\n\
+</HEAD>\r\n\
+<BODY>\r\n\
+    <h1>BAD REQUEST</h1>\r\n\
+</BODY>\r\n\
+</HTML>";
+    int len = write(client_sock, reply, strlen(reply));
+#ifdef DEBUG
+    fprintf(stdout, reply);
+#endif
+
+    if (len <= 0) {
+#ifdef DEBUG
+    fprintf(stderr, "send reply failed : info : %s", strerror(errno));
+#endif
+    } 
 }
