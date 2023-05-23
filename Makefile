@@ -1,6 +1,6 @@
 CXX = gcc
 INCDIR = ./include
-CXXFLAGS = -Wall -Wextra -I$(INCDIR) -O0 -g
+CXXFLAGS = -Wall -pthread -Wextra -I$(INCDIR) -O0 -g
 SRCDIR = ./src
 OBJDIR = ./output
 BINDIR = ./output/bin

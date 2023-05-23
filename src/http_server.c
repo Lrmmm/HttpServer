@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "http_method.h"
 #include "define.h"
 
@@ -55,6 +56,8 @@ int main(void)
         char client_ip[64];  // 用于存储客户端的ip地址
         int buf_len;
         char buf[BUF_SIZE];
+        pthread_t id;
+        int* pclient_sock = NULL;
 
         socklen_t client_addr_len = sizeof(client_addr);
         client_sock = accept(sock, (struct sockaddr *)&client_addr, &client_addr_len); // 阻塞并等待客户端的连接请求，如果有新的客户端连接请求，将创建一个新的套接字来处理该连接，并返回该套接字的文件描述符
@@ -62,8 +65,12 @@ int main(void)
                 , ntohs(client_addr.sin_port));
 
         // 处理http请求，读取客户端发送的数据
-        do_http_request(client_sock);
-        close(client_sock);
+        // do_http_request(&client_sock);
+        pclient_sock = (int*) malloc(sizeof(int));
+        *pclient_sock = client_sock;
+        pthread_create(&id, NULL, do_http_request, pclient_sock);
+
+        // close(client_sock);
     }
 
     return 0;

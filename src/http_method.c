@@ -45,7 +45,7 @@ int get_line(int sock, char* buf, int size)
     
 
 }
-void do_http_request(int client_sock)
+void* do_http_request(void* pclient_sock)
 {
     int buf_len = 0;
     char buf[256];
@@ -53,7 +53,7 @@ void do_http_request(int client_sock)
     char url[256];
     char path[256];
     struct stat file_stat;
-
+    int client_sock = *(int*)pclient_sock;
     // 读取客户端发送的http请求
 
     // 1.读取请求行
@@ -159,7 +159,12 @@ void do_http_request(int client_sock)
         bad_request(client_sock);
     }
 
-
+    close(client_sock);
+    if (pclient_sock)
+    {
+        free(pclient_sock);
+    }
+    return NULL;
 }
 
 void do_http_response(int client_sock, const char * path)
