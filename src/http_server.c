@@ -8,8 +8,8 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "http_method.h"
-#include "define.h"
+#include "../include/http_method.h"
+#include "../include/define.h"
 
 #define SERVER_PORT 8765
 #define BUF_SIZE 256

@@ -1,7 +1,7 @@
-#include "http_method.h"
+#include "../include/http_method.h"
 #include <stdio.h>
 #include <string.h>
-#include "define.h"
+#include "../include/define.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
